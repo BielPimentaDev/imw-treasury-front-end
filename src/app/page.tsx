@@ -1,101 +1,270 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { fileObject, TransactionInterface } from './types/TransactionInterface';
+import DeleteModal from './modals/DeleteModal';
+import EditModal from './modals/EditModal';
+import AddModal from './modals/AddModal';
+import axios from 'axios';
+
+// import React, { useEffect, useState } from 'react';
+// import axios from 'axios';
+// import AddModal from './modals/AddModal';
+// import EditModal from './modals/EditModal';
+// import { TransactionInterface } from './types/TransactionInterface';
+// import DeleteModal from './modals/DeleteModal';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+	const [deleteTransactionId, setDeleteTransactionId] = useState<
+		string | null
+	>();
+	const [transactions, setTransactions] = useState<TransactionInterface[]>([]);
+	const [selectedTransaction, setSelectedTransaction] =
+		useState<TransactionInterface | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+	const baixarArquivos = (files: fileObject[]) => {
+		const file_ = files[0];
+		const link = document.createElement('a');
+		link.href = file_.filePath;
+		link.setAttribute('download', file_.fileName);
+		link.setAttribute('target', '_blank');
+		document.body.appendChild(link);
+		link.click();
+	};
+
+	const [openTransactionModal, setOpenTransactionModal] = useState(true);
+	const [openDeleteTransaction, setOpenDeleteTransaction] = useState(false);
+	const [openTransactionEditModal, setOpenTransactionEditModal] =
+		useState(false);
+
+	const handleMultipleDownloads = (files: fileObject[]) => {
+		files.forEach((file) => handleDownload(file.filePath, file.fileName));
+	};
+
+	const handleDownload = async (fileUrl: string, fileName: string) => {
+		const response = await fetch(fileUrl);
+		const blob = await response.blob();
+		const url = window.URL.createObjectURL(blob);
+
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = fileName; // Nome do arquivo baixado
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+
+		// Revogar o objeto URL para liberar memória
+		window.URL.revokeObjectURL(url);
+	};
+
+	useEffect(() => {
+		// Função para buscar os dados
+		const fetchTransactions = async () => {
+			try {
+				const response = await axios.get(
+					'https://vx3g7pz02b.execute-api.sa-east-1.amazonaws.com/dev/transactions'
+				);
+				setTransactions(response.data.items);
+				console.log(transactions);
+			} catch (error) {
+				console.error('Erro ao buscar transações:', error);
+			}
+		};
+
+		fetchTransactions();
+	}, []);
+	return (
+		<main className='px-4 max-w-[1700px] mx-auto bg-white'>
+			<section className='rounded-lg flex justify-center items-center gap-12'>
+				<div className='p-6 rounded-xl'>
+					<p className='text-gray-500 font-medium'>Valor Total:</p>
+					<p className='font-medium text-3xl'>R$43.324,50</p>
+				</div>
+
+				<div>
+					<div className='flex items-center gap'>
+						<p className='font-medium text-gray-500'>Valor entrada</p>
+						<svg
+							xmlns='http://www.w3.org/2000/svg'
+							width='16'
+							height='16'
+							viewBox='0 0 24 24'
+							fill='green'>
+							<polygon points='12,4 4,20 20,20'></polygon>
+						</svg>
+					</div>
+					<p className='font-medium text-3xl'>R$3.324,50</p>
+				</div>
+				<div>
+					<div className='flex items-center gap'>
+						<p className='font-medium text-gray-500'>Valor saida</p>
+						<svg
+							xmlns='http://www.w3.org/2000/svg'
+							width='14'
+							height='14'
+							viewBox='0 0 24 24'
+							fill='red'>
+							<polygon points='12,20 4,4 20,4'></polygon>
+						</svg>
+					</div>
+					<p className='font-medium text-3xl'>R$324,50</p>
+				</div>
+			</section>
+
+			<header className='bg-white flex justify-between p-4 px-4 items-center'>
+				<div>
+					<h1 className='font-bold text-3xl'>Transações</h1>
+					<p className='text-zinc-400'>Ultima transacao registrada : 24/05</p>
+				</div>
+				<div className='flex gap-4 items-center'>
+					<form className='max-w-md mx-auto'>
+						<label
+							htmlFor='default-search'
+							className='mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white'>
+							Search
+						</label>
+						<div className='relative'>
+							<div className='absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none'>
+								<svg
+									className='w-4 h-4 text-gray-500 dark:text-gray-400'
+									aria-hidden='true'
+									xmlns='http://www.w3.org/2000/svg'
+									fill='none'
+									viewBox='0 0 20 20'>
+									<path
+										stroke='currentColor'
+										stroke-linecap='round'
+										stroke-linejoin='round'
+										stroke-width='2'
+										d='m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z'
+									/>
+								</svg>
+							</div>
+							<input
+								type='search'
+								id='default-search'
+								className='block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500'
+								placeholder='Buscar...'
+								required
+							/>
+						</div>
+					</form>
+
+					{openTransactionModal && (
+						<AddModal setOpenTransactionModal={setOpenTransactionModal} />
+					)}
+					<button
+						type='submit'
+						onClick={() => setOpenTransactionModal((curr) => !curr)}
+						className='bg-blue-500 text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800'>
+						Adicionar Transação
+					</button>
+				</div>
+			</header>
+			<section className='relative max-h-[550px] overflow-auto bg-white p-4 rounded-lg mt-4'>
+				<table className='w-full text-sm text-left shadow-md rtl:text-right text-gray-500 dark:text-gray-400 border-collapse'>
+					<thead className='sticky -top-4 bg-white p-2 dark:bg-gray-700 text-gray-700 dark:text-gray-400 uppercase text-xs z-[1]'>
+						<tr className='text-center border-b border-gray-300'>
+							<th scope='col' className='px-6 py-3'>
+								Data da movimentação
+							</th>
+
+							<th scope='col' className='px-6 py-3'>
+								Tipo
+							</th>
+							<th scope='col' className='px-6 py-3'>
+								Preço
+							</th>
+							<th scope='col' className='px-6 py-3'>
+								Descrição
+							</th>
+							<th scope='col' className='px-6 py-3'>
+								Comprovante
+							</th>
+							<th scope='col' className='px-6 py-3'>
+								Trismetre
+							</th>
+							<th scope='col' className='px-6 py-3'>
+								Categoria
+							</th>
+							<th scope='col' className='px-6 py-3'></th>
+						</tr>
+					</thead>
+					<tbody id='transactionTableBody' className='text-gray-800'>
+						{transactions &&
+							transactions?.map((item, index) => (
+								<tr
+									key={index}
+									className='bg-white border-b border-gray-300 text-center dark:bg-gray-800 dark:border-gray-700 group'>
+									<td className='px-6 py-4'>{item.date}</td>
+
+									<td className='px-6 py-4'>
+										<span
+											className={`${
+												item.type === 'entrada'
+													? 'text-green-600'
+													: 'text-red-600'
+											} font-semibold p-1 rounded-full px-4 inline-flex items-center gap-2`}>
+											{item.type === 'entrada' ? '+ Entrada' : '- Saída'}
+										</span>
+									</td>
+									<td className='px-6 py-4'>{item.price}</td>
+									<td className='px-6 py-4'>{item.description}</td>
+									<td className='px-6 py-4 text-center'>
+										<button
+											className='text-blue-500 underline'
+											onClick={() => handleMultipleDownloads(item.file)}>
+											Baixar
+										</button>
+									</td>
+									<td className='px-6 py-4'>
+										<span className='text-purple-600 font-semibold p-1 rounded-full px-4 bg-purple-500/20 inline-block'>
+											{item.quarter}
+										</span>
+									</td>
+									<td className='px-6 py-4'>
+										<span className='text-purple-600 font-semibold p-1 rounded-full px-4 bg-purple-500/20 inline-block'>
+											{item.category}
+										</span>
+									</td>
+									<td className='px-6 py-4'>
+										<button
+											onClick={() => {
+												setOpenTransactionEditModal((curr) => !curr);
+
+												setSelectedTransaction(item);
+											}}
+											id='openEditModalButton'
+											className='edit-btn p-2 rounded-lg border-gray-300 border invisible cursor-pointer h-full group-hover:visible'>
+											<i className='fas fa-pencil-alt'>Editar</i>
+										</button>
+										<button
+											onClick={() => {
+												setOpenDeleteTransaction((curr) => !curr);
+												setDeleteTransactionId(item.id);
+											}}
+											id='openEditModalButton'
+											className='edit-btn p-2 rounded-lg border-gray-300 border invisible cursor-pointer h-full group-hover:visible'>
+											<i className='fas fa-pencil-alt'>Deletar</i>
+										</button>
+									</td>
+								</tr>
+							))}
+					</tbody>
+				</table>
+				{openTransactionEditModal && (
+					<EditModal
+						setOpenTransactionModal={setOpenTransactionEditModal}
+						selectedTransaction={selectedTransaction}
+					/>
+				)}
+				{openDeleteTransaction && (
+					<DeleteModal
+						setOpenDeleteModal={setOpenDeleteTransaction}
+						transactionId={deleteTransactionId}
+					/>
+				)}
+			</section>
+		</main>
+	);
 }
