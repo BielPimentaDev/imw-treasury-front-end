@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
+import { AuthProvider } from './context/AuthContext';
+import Link from 'next/link';
 
 const geistSans = localFont({
 	src: './fonts/GeistVF.woff',
@@ -27,24 +29,27 @@ export default function RootLayout({
 		<html lang='en'>
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-				<header className='shadow-lg bg-white p-2 flex items-center justify-between px-4 max-w-[1700px] mx-auto'>
+				<header className=' bg-white p-2 flex items-center justify-between px-4 max-w-[1700px] mx-auto'>
 					<div className='flex items-center'>
 						{/* <img src='/imw-logo.png' className='w-16' /> */}
 						<h1 className='font-medium text-lg'>Metodista Wesleyana</h1>
 					</div>
 					<nav className='ml-12'>
 						<ul className='flex gap-4 text-gray-500'>
-							<li className='text-black font-medium'>Historico</li>
-							<li>Relatorios</li>
-							<li>Relatorios</li>
-							<li>Relatorios</li>
+							<li className='text-black font-medium'>
+								<Link href='/relatorios'>Relatorios</Link>
+							</li>
+							<li className='text-black font-medium'>
+								<Link href='/'>Home</Link>
+							</li>
 						</ul>
 					</nav>
-					<div className='flex items-center gap-4'>
-						{/* <img src='/profile.png' /> */}
-					</div>
 				</header>
-				{children}
+				<AuthProvider>
+					<main className='px-4 max-w-[1700px] mx-auto bg-white'>
+						{children}
+					</main>
+				</AuthProvider>
 			</body>
 		</html>
 	);
