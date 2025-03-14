@@ -1,33 +1,18 @@
-import axios from 'axios';
-import React, { useEffect, useState } from 'react';
-import { TransactionInterface } from '../types/TransactionInterface';
+import React from 'react';
 
-type DeleteModalProps = {
+import { useTransactionsApi } from '../api/useTransactionsApi';
+import { deleteTransactionInterface } from '../types/TransactionInterface';
+
+export type DeleteModalProps = {
 	setOpenDeleteModal: React.Dispatch<React.SetStateAction<boolean>>;
-	transactionId: string;
+	deleteTransactionInfo: deleteTransactionInterface;
 };
 
 const DeleteModal = ({
 	setOpenDeleteModal,
-	transactionId,
+	deleteTransactionInfo,
 }: DeleteModalProps) => {
-	const deleteTransaction = async (id: string) => {
-		try {
-			const response = await axios.delete(
-				'https://vx3g7pz02b.execute-api.sa-east-1.amazonaws.com/dev/transactions',
-				{
-					params: { id },
-					headers: {
-						'Content-Type': 'application/json',
-					},
-				}
-			);
-			console.log('Transação deletada:', response.data);
-			setOpenDeleteModal(false); // Fecha o modal ao concluir
-		} catch (error) {
-			console.error('Erro:', error);
-		}
-	};
+	const { deleteTransaction } = useTransactionsApi();
 
 	return (
 		<div
@@ -53,7 +38,14 @@ const DeleteModal = ({
 						Essa ação nao pode ser desfeita posteriormente
 					</p>
 					<button
-						onClick={() => deleteTransaction(transactionId)}
+						onClick={() => {
+							deleteTransaction(
+								deleteTransactionInfo.id,
+								deleteTransactionInfo.price,
+								deleteTransactionInfo.type
+							);
+							setOpenDeleteModal((curr) => !curr);
+						}}
 						className='text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800'>
 						Deletar
 					</button>

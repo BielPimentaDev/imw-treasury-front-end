@@ -1,12 +1,10 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { TransactionInterface } from '../types/TransactionInterface';
 
 interface UploadFormInterface {
-	setFormData: (
-		e: React.Dispatch<React.SetStateAction<TransactionInterface>>
-	) => void;
+	setFormData: React.Dispatch<React.SetStateAction<TransactionInterface>>;
 }
 
 interface FileObject {
@@ -18,6 +16,10 @@ const UploadForm = (props: UploadFormInterface) => {
 	const { setFormData } = props;
 
 	const [fileArray, setFileArray] = useState<FileObject[]>([]);
+
+	useEffect(() => {
+		setFormData((curr) => ({ ...curr, file: fileArray }));
+	}, [fileArray]);
 
 	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		if (!event.target.files) return;
@@ -69,9 +71,6 @@ const UploadForm = (props: UploadFormInterface) => {
 					filePath: `https://imw-treasury.s3.sa-east-1.amazonaws.com/${filePath}`,
 				},
 			]);
-			console.log(fileArray);
-
-			setFormData((curr) => ({ ...curr, file: fileArray }));
 		} catch (error) {
 			console.log('upload to signed url error', error);
 		}
@@ -85,16 +84,6 @@ const UploadForm = (props: UploadFormInterface) => {
 						return <p key={index}>{file.fileName}</p>;
 					})}
 			</div>
-			{/* 
-			<label htmlFor='file-input'>
-				<button
-					type='button'
-					className='bg-blue-500 text-white p-2 rounded-lg'
-					// Evita comportamento inesperado
-				>
-					Selecionar arquivos
-				</button>
-			</label> */}
 
 			<input
 				id='file-input'

@@ -1,38 +1,26 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fileObject, TransactionInterface } from './types/TransactionInterface';
+import {
+	deleteTransactionInterface,
+	fileObject,
+	TransactionInterface,
+} from './types/TransactionInterface';
 import DeleteModal from './modals/DeleteModal';
 import EditModal from './modals/EditModal';
 import AddModal from './modals/AddModal';
-import axios from 'axios';
-
-// import React, { useEffect, useState } from 'react';
-// import axios from 'axios';
-// import AddModal from './modals/AddModal';
-// import EditModal from './modals/EditModal';
-// import { TransactionInterface } from './types/TransactionInterface';
-// import DeleteModal from './modals/DeleteModal';
+import { useAuth } from './context/AuthContext';
+import { useTransactionsApi } from './api/useTransactionsApi';
 
 export default function Home() {
-	const [deleteTransactionId, setDeleteTransactionId] = useState<
-		string | null
-	>();
-	const [transactions, setTransactions] = useState<TransactionInterface[]>([]);
+	const { transactions, totals, setYearFilter, yearFilter } = useAuth();
+	const [deleteTransaction, setDeleteTransaction] =
+		useState<deleteTransactionInterface | null>();
+
 	const [selectedTransaction, setSelectedTransaction] =
 		useState<TransactionInterface | null>(null);
 
-	const baixarArquivos = (files: fileObject[]) => {
-		const file_ = files[0];
-		const link = document.createElement('a');
-		link.href = file_.filePath;
-		link.setAttribute('download', file_.fileName);
-		link.setAttribute('target', '_blank');
-		document.body.appendChild(link);
-		link.click();
-	};
-
-	const [openTransactionModal, setOpenTransactionModal] = useState(true);
+	const [openTransactionModal, setOpenTransactionModal] = useState(false);
 	const [openDeleteTransaction, setOpenDeleteTransaction] = useState(false);
 	const [openTransactionEditModal, setOpenTransactionEditModal] =
 		useState(false);
@@ -52,33 +40,36 @@ export default function Home() {
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
-
-		// Revogar o objeto URL para liberar memória
 		window.URL.revokeObjectURL(url);
 	};
 
-	useEffect(() => {
-		// Função para buscar os dados
-		const fetchTransactions = async () => {
-			try {
-				const response = await axios.get(
-					'https://vx3g7pz02b.execute-api.sa-east-1.amazonaws.com/dev/transactions'
-				);
-				setTransactions(response.data.items);
-				console.log(transactions);
-			} catch (error) {
-				console.error('Erro ao buscar transações:', error);
-			}
-		};
+	const { fetchTransactions } = useTransactionsApi();
 
+	useEffect(() => {
 		fetchTransactions();
 	}, []);
+
+	const formatDate = (dateString: string) => {
+		return new Intl.DateTimeFormat('pt-BR').format(new Date(dateString));
+	};
+
+	useEffect(() => {
+		if (yearFilter) {
+			fetchTransactions();
+		}
+	}, [yearFilter]);
+
+	const onChangeYearFilter = (e) => {
+		setYearFilter(e.target.value); // Atualiza o estado
+	};
 	return (
 		<main className='px-4 max-w-[1700px] mx-auto bg-white'>
 			<section className='rounded-lg flex justify-center items-center gap-12'>
 				<div className='p-6 rounded-xl'>
 					<p className='text-gray-500 font-medium'>Valor Total:</p>
-					<p className='font-medium text-3xl'>R$43.324,50</p>
+					<p className='font-medium text-3xl'>
+						R${totals.totalIncome - totals.totalExpense}
+					</p>
 				</div>
 
 				<div>
@@ -93,7 +84,7 @@ export default function Home() {
 							<polygon points='12,4 4,20 20,20'></polygon>
 						</svg>
 					</div>
-					<p className='font-medium text-3xl'>R$3.324,50</p>
+					<p className='font-medium text-3xl'>R${totals.totalIncome}</p>
 				</div>
 				<div>
 					<div className='flex items-center gap'>
@@ -107,14 +98,24 @@ export default function Home() {
 							<polygon points='12,20 4,4 20,4'></polygon>
 						</svg>
 					</div>
-					<p className='font-medium text-3xl'>R$324,50</p>
+					<p className='font-medium text-3xl'>R${totals.totalExpense}</p>
 				</div>
 			</section>
 
 			<header className='bg-white flex justify-between p-4 px-4 items-center'>
 				<div>
 					<h1 className='font-bold text-3xl'>Transações</h1>
-					<p className='text-zinc-400'>Ultima transacao registrada : 24/05</p>
+					<p className='text-zinc-400'>Biênio:</p>
+					<select
+						id='category'
+						name='category'
+						className='bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500'
+						onChange={onChangeYearFilter}>
+						<option value={'2026'}>2026</option>
+						<option value={'2025'}>2025</option>
+						<option value={'2024'}>2024</option>
+						<option value={'2023'}>2023</option>
+					</select>
 				</div>
 				<div className='flex gap-4 items-center'>
 					<form className='max-w-md mx-auto'>
@@ -173,7 +174,7 @@ export default function Home() {
 								Tipo
 							</th>
 							<th scope='col' className='px-6 py-3'>
-								Preço
+								Valor
 							</th>
 							<th scope='col' className='px-6 py-3'>
 								Descrição
@@ -196,7 +197,7 @@ export default function Home() {
 								<tr
 									key={index}
 									className='bg-white border-b border-gray-300 text-center dark:bg-gray-800 dark:border-gray-700 group'>
-									<td className='px-6 py-4'>{item.date}</td>
+									<td className='px-6 py-4'>{formatDate(item.date)}</td>
 
 									<td className='px-6 py-4'>
 										<span
@@ -241,7 +242,11 @@ export default function Home() {
 										<button
 											onClick={() => {
 												setOpenDeleteTransaction((curr) => !curr);
-												setDeleteTransactionId(item.id);
+												setDeleteTransaction({
+													id: item.id,
+													price: Number(item.price),
+													type: item.type,
+												});
 											}}
 											id='openEditModalButton'
 											className='edit-btn p-2 rounded-lg border-gray-300 border invisible cursor-pointer h-full group-hover:visible'>
@@ -260,8 +265,8 @@ export default function Home() {
 				)}
 				{openDeleteTransaction && (
 					<DeleteModal
+						deleteTransactionInfo={deleteTransaction}
 						setOpenDeleteModal={setOpenDeleteTransaction}
-						transactionId={deleteTransactionId}
 					/>
 				)}
 			</section>

@@ -1,17 +1,28 @@
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { TransactionInterface } from '../types/TransactionInterface';
 import UploadForm from './UploadForm';
+import { useTransactionsApi } from '../api/useTransactionsApi';
 
 type EditModalProps = {
 	setOpenTransactionModal: React.Dispatch<React.SetStateAction<boolean | null>>;
 	selectedTransaction: TransactionInterface;
+};
+export type oldTransactionType = {
+	type: string;
+	price: number;
 };
 
 const EditModal = ({
 	setOpenTransactionModal,
 	selectedTransaction,
 }: EditModalProps) => {
+	const { editTransaction } = useTransactionsApi();
+
+	const [oldTransaction, setOldTransaction] = useState<oldTransactionType>({
+		price: 0,
+		type: '',
+	});
+
 	const [formData, setFormData] = useState({
 		id: '',
 		price: '',
@@ -19,20 +30,24 @@ const EditModal = ({
 		category: '',
 		transactionType: '',
 		description: '',
-		file: '',
+		quarter: 0,
+		type: '',
+		file: [{ fileName: '', filePath: '' }],
 	});
 
 	useEffect(() => {
 		if (selectedTransaction) {
 			setFormData({
 				id: selectedTransaction.id || '',
+				quarter: selectedTransaction.quarter || 0,
+				type: selectedTransaction.type || '',
 				price: selectedTransaction.price || '',
 				date: selectedTransaction.date || '',
 				category: selectedTransaction.category || '',
-				transactionType: selectedTransaction.type || '',
 				description: selectedTransaction.description || '',
-				file: 'null',
+				file: selectedTransaction.file || [{ fileName: '', filePath: '' }],
 			});
+			setOldTransaction({ type: formData.type, price: Number(formData.price) });
 		}
 	}, [selectedTransaction]);
 
@@ -50,39 +65,24 @@ const EditModal = ({
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault(); // Evitar recarregar a página
-		console.log(formData);
-		// fetchTransactions();
-		// setOpenTransactionModal(false);
+
+		editTransaction(formData, oldTransaction);
+		setOpenTransactionModal(false);
 	};
 
-	const fetchTransactions = async () => {
-		const body = JSON.stringify(formData);
-		try {
-			await axios.put(
-				'https://vx3g7pz02b.execute-api.sa-east-1.amazonaws.com/dev/transactions',
-				body,
-				{
-					headers: {
-						'Content-Type': 'application/json',
-					},
-				}
-			);
-		} catch (error) {
-			console.error('Erro:', error.message);
-			console.log('Dados enviados:', body);
-		}
-	};
 	return (
 		<div
 			id='modal'
 			className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
-			<div className='absolute max-w-screen top-0 overflow-hidden left-0 lg:relative h-screen w-screen  bg-white rounded-lg shadow dark:bg-gray-700'>
+			<div className=' max-w-screen overflow-hidden left-0 lg:relative h-screen w-screen  bg-white rounded-lg shadow dark:bg-gray-700'>
 				<div className='flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600'>
 					<h3 className='text-lg font-semibold text-gray-900 dark:text-white'>
 						Editar transacao
 					</h3>
 					<button
-						onClick={() => setOpenTransactionModal((curr) => !curr)}
+						onClick={() => {
+							setOpenTransactionModal((curr) => !curr);
+						}}
 						id='closeModalButton'
 						className='absolute top-3 right-3 text-gray-400 hover:text-gray-600'>
 						✕
@@ -142,6 +142,45 @@ const EditModal = ({
 								<option value='Departamento 5'>Departamento 5</option>
 							</select>
 						</div>
+						<div className='col-span-1'>
+							<label
+								htmlFor='categoryType'
+								className='block mb-2 text-sm font-medium text-gray-900 dark:text-white'>
+								Tipo
+							</label>
+							<div className='flex items-center mb-1'>
+								<input
+									id='entrada'
+									type='radio'
+									onChange={handleChange}
+									value='entrada'
+									checked={formData.type == 'entrada'}
+									name='type'
+									className='w-4 h-4  text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
+								/>
+								<label
+									htmlFor='entrada'
+									className='ms-2 text-sm font-medium text-gray-900 dark:text-gray-300'>
+									Entrada
+								</label>
+							</div>
+							<div className='flex items-center mb-4'>
+								<input
+									id='saida'
+									type='radio'
+									onChange={handleChange}
+									value='saida'
+									name='type'
+									checked={formData.type == 'saida'}
+									className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
+								/>
+								<label
+									htmlFor='saida'
+									className='ms-2 text-sm font-medium text-gray-900 dark:text-gray-300'>
+									Saida
+								</label>
+							</div>
+						</div>
 
 						<div className='col-span-2'>
 							<label
@@ -164,7 +203,7 @@ const EditModal = ({
 					<button
 						type='submit'
 						className='text-white inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800'>
-						Adicionar Transação
+						Editar Transação
 					</button>
 				</form>
 			</div>

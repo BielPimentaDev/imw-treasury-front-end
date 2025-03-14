@@ -3,7 +3,7 @@ export type TransactionInterface = {
 	date: string;
 	type: string;
 	category: string;
-	file: fileObject[];
+	file: fileObject[] | string;
 	description: string;
 	id: string;
 	quarter: number;
@@ -12,14 +12,19 @@ export type TransactionInterface = {
 export type TransactionSendedInterface = {
 	price: string;
 	date: string;
-
+	type: string;
 	category: string;
-	file: fileObject[];
+	file: string | fileObject[];
 	description: string;
-	id: string;
 };
 
 export type fileObject = {
 	fileName: string;
 	filePath: string;
 };
+
+export interface deleteTransactionInterface {
+	id: string;
+	price: number;
+	type: string;
+}

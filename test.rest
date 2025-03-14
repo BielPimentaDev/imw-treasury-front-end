@@ -4,6 +4,22 @@ Content-Type: application/json
 {
   "price": "100",
   "description": "Test description",
+  "type": "entrada",
+  "file": "file.pdf",
+  "date": "2024-11-20",
+  "category": "test"
+}
+
+
+
+###PUT
+PUT https://vx3g7pz02b.execute-api.sa-east-1.amazonaws.com/dev/transactions
+Content-Type: application/json
+
+{
+  "id": "9a3c6c69-3d44-424c-aada-7fdd85886afc",
+  "price": "100",
+  "description": "Test description",
   "type": "expense",
   "file": "file.pdf",
   "date": "2024-7-20",
@@ -11,7 +27,7 @@ Content-Type: application/json
 }
 
 ### GET
-GET https://vx3g7pz02b.execute-api.sa-east-1.amazonaws.com/dev/transactions
+GET https://vx3g7pz02b.execute-api.sa-east-1.amazonaws.com/dev/transactions?year=2026
 Content-Type: application/json
 
 ### POST - Gerar URL
