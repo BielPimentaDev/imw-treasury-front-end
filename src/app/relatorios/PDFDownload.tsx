@@ -3,7 +3,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import axios from 'axios';
-// import { MdDownload } from 'react-icons/md';
 import { FaFileDownload } from 'react-icons/fa';
 
 interface PDFDownloadProps {
@@ -36,12 +35,10 @@ export default function PDFDownload({
 			nextYearData = await fetchYearData(nextYear);
 		}
 
-		// Combinar os itens dos dois anos se for biênio
 		const items = nextYearData
 			? [...currentYearData.items, ...nextYearData.items]
 			: currentYearData.items;
 
-		// Criar documento PDF
 		const doc = new jsPDF();
 		doc.setFontSize(16);
 		doc.text(
@@ -86,7 +83,6 @@ export default function PDFDownload({
 			});
 		}
 
-		// Definir posição do resumo financeiro
 		const finalY = withItems ? (doc as any).lastAutoTable?.finalY || 30 : 30;
 		doc.setDrawColor(0);
 		doc.setLineWidth(0.5);
@@ -98,7 +94,6 @@ export default function PDFDownload({
 
 		const summaryData = [];
 
-		// Adicionar dados de 2025
 		summaryData.push(
 			[
 				`Saldo Anterior ${year}:`,
