@@ -29,7 +29,7 @@ export default function PDFDownload({
 
 		const currentYearData = await fetchYearData(year);
 		let nextYearData = null;
-		let nextYear = (parseInt(year) + 1).toString();
+		const nextYear = (parseInt(year) + 1).toString();
 
 		if (isBienio) {
 			nextYearData = await fetchYearData(nextYear);
@@ -57,11 +57,12 @@ export default function PDFDownload({
 				'Tipo',
 				'Bimestre',
 			];
+			console.log(items);
 			const rows = items.map((item) => [
 				item.date,
 				item.category,
 				item.description,
-				`R$ ${item.price.toFixed(2)}`,
+				`R$ ${Number(item.price).toFixed(2)}`,
 				item.type,
 				item.quarter || '-',
 			]);
