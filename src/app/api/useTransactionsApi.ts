@@ -4,12 +4,10 @@ import {
 	TransactionInterface,
 	TransactionSendedInterface,
 } from '../types/TransactionInterface';
-import { useTotalsHandler } from '../hooks/useTotalsHandler';
 import { oldTransactionType } from '../modals/EditModal';
 
 export function useTransactionsApi() {
 	const { transactions, setTransactions, setTotals, yearFilter } = useAuth();
-	const { totalsHandler, totalsHandlerRemove } = useTotalsHandler();
 	const fetchTransactions = async () => {
 		try {
 			const response = await axios.get(
