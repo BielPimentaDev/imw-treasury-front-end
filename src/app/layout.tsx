@@ -40,6 +40,9 @@ export default function RootLayout({
 								<Link href='/relatorios'>Relatorios</Link>
 							</li>
 							<li className='text-black font-medium'>
+								<Link href='/relatoriosMensais'>Relatorios Mensais</Link>
+							</li>
+							<li className='text-black font-medium'>
 								<Link href='/'>Home</Link>
 							</li>
 						</ul>
